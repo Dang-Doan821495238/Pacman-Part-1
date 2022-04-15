@@ -18,12 +18,13 @@ Pacman agents (in searchAgents.py).
 """
 
 import util
-
+from util import Stack
+from util import Queue
+from util import PriorityQueue
 class SearchProblem:
     """
     This class outlines the structure of a search problem, but doesn't implement
     any of the methods (in object-oriented terminology: an abstract class).
-
     You do not need to change anything in this class, ever.
     """
 
@@ -36,7 +37,6 @@ class SearchProblem:
     def isGoalState(self, state):
         """
           state: Search state
-
         Returns True if and only if the state is a valid goal state.
         """
         util.raiseNotDefined()
@@ -44,7 +44,6 @@ class SearchProblem:
     def getSuccessors(self, state):
         """
           state: Search state
-
         For a given state, this should return a list of triples, (successor,
         action, stepCost), where 'successor' is a successor to the current
         state, 'action' is the action required to get there, and 'stepCost' is
@@ -55,12 +54,10 @@ class SearchProblem:
     def getCostOfActions(self, actions):
         """
          actions: A list of actions to take
-
         This method returns the total cost of a particular sequence of actions.
         The sequence must be composed of legal moves.
         """
         util.raiseNotDefined()
-
 
 def tinyMazeSearch(problem):
     """
@@ -75,29 +72,127 @@ def tinyMazeSearch(problem):
 def depthFirstSearch(problem):
     """
     Search the deepest nodes in the search tree first.
-
     Your search algorithm needs to return a list of actions that reaches the
     goal. Make sure to implement a graph search algorithm.
-
     To get started, you might want to try some of these simple commands to
     understand the search problem that is being passed in:
-
-    print "Start:", problem.getStartState()
-    print "Is the start a goal?", problem.isGoalState(problem.getStartState())
-    print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    stackXY = Stack()
+
+    visited = [] 
+    path = [] 
+  
+    if problem.isGoalState(problem.getStartState()):
+        return []
+
+    
+    stackXY.push((problem.getStartState(),[]))
+
+    while(True):
+
+        if stackXY.isEmpty():
+            return []
+
+       
+        xy,path = stackXY.pop() 
+        visited.append(xy)
+
+        
+        if problem.isGoalState(xy):
+            return path
+
+        succ = problem.getSuccessors(xy)
+
+        if succ:
+            for item in succ:
+                if item[0] not in visited:
+
+              
+                    newPath = path + [item[1]] \
+                    stackXY.push((item[0],newPath))
 
 def breadthFirstSearch(problem):
-    """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    queueXY = Queue()
+
+    visited = [] 
+    path = [] 
+
+    if problem.isGoalState(problem.getStartState()):
+        return []
+
+    queueXY.push((problem.getStartState(),[]))
+
+    while(True):
+
+        if queueXY.isEmpty():
+            return []
+
+  
+        xy,path = queueXY.pop() 
+        visited.append(xy)
+
+
+        if problem.isGoalState(xy):
+            return path
+
+        succ = problem.getSuccessors(xy)
+
+        if succ:
+            for item in succ:
+                if item[0] not in visited and item[0] not in (state[0] for state in queueXY.list):
+
+                    newPath = path + [item[1]] 
+                    queueXY.push((item[0],newPath))
 
 def uniformCostSearch(problem):
-    """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    queueXY = PriorityQueue()
+
+    visited = [] 
+    path = [] 
+
+    if problem.isGoalState(problem.getStartState()):
+        return []
+                                     #
+    queueXY.push((problem.getStartState(),[]),0)
+
+    while(True):
+
+        if queueXY.isEmpty():
+            return []
+
+        xy,path = queueXY.pop() 
+        visited.append(xy)
+
+        if problem.isGoalState(xy):
+            return path
+
+        succ = problem.getSuccessors(xy)
+
+        if succ:
+            for item in succ:
+                if item[0] not in visited and (item[0] not in (state[2][0] for state in queueXY.heap)):
+
+
+                    newPath = path + [item[1]]
+                    pri = problem.getCostOfActions(newPath)
+
+                    queueXY.push((item[0],newPath),pri)
+
+                elif item[0] not in visited and (item[0] in (state[2][0] for state in queueXY.heap)):
+                    for state in queueXY.heap:
+                        if state[2][0] == item[0]:
+                            oldPri = problem.getCostOfActions(state[2][1])
+
+                    newPri = problem.getCostOfActions(path + [item[1]])
+
+                    if oldPri > newPri:
+                        newPath = path + [item[1]]
+                        queueXY.update((item[0],newPath),newPri)
 
 def nullHeuristic(state, problem=None):
     """
@@ -106,10 +201,61 @@ def nullHeuristic(state, problem=None):
     """
     return 0
 
+from util import PriorityQueue
+class MyPriorityQueueWithFunction(PriorityQueue):
+ 
+     def  __init__(self, problem, priorityFunction):
+        "priorityFunction (item) -> priority"
+        self.priorityFunction = priorityFunction      
+        PriorityQueue.__init__(self)        
+        self.problem = problem
+    def push(self, item, heuristic):
+        "Adds an item to the queue with priority from the priority function"
+        PriorityQueue.push(self, item, self.priorityFunction(self.problem,item,heuristic))
+
+def f(problem,state,heuristic):
+
+    return problem.getCostOfActions(state[1]) + heuristic(state[0],problem)
+
 def aStarSearch(problem, heuristic=nullHeuristic):
-    """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    queueXY = MyPriorityQueueWithFunction(problem,f)
+
+    path = [] 
+    visited = [] 
+
+
+    if problem.isGoalState(problem.getStartState()):
+        return []
+
+    element = (problem.getStartState(),[])
+
+    queueXY.push(element,heuristic)
+
+    while(True):
+
+        if queueXY.isEmpty():
+            return []
+
+        xy,path = queueXY.pop() 
+        if xy in visited:
+            continue
+
+        visited.append(xy)
+
+        if problem.isGoalState(xy):
+            return path
+
+        succ = problem.getSuccessors(xy)
+
+        if succ:
+            for item in succ:
+                if item[0] not in visited:
+
+                    newPath = path + [item[1]] 
+                    element = (item[0],newPath)
+                    queueXY.push(element,heuristic)
 
 
 # Abbreviations
